@@ -1,5 +1,5 @@
 From Coq Require Import ssreflect.
-From HoTT Require Import HoTT.
+(* From HoTT Require Import HoTT. *)
 From Trocq Require Import Trocq.
 
 Set Universe Polymorphism.
@@ -43,7 +43,7 @@ Definition tl {A n} (v : vect A (S n)) : vect A n :=
 Definition dhd {A B n} {v : vect A (S n)} (vε : vectε B v) : B (hd v) :=
   match vε in @vectε _ _ n v return
         match n as n return vect A n -> Type with
-        | 0%nat => fun _ => Unit
+        | 0%nat => fun _ => unit
         | S n => fun v => B (hd v) end v with
   | εε => tt
   | consε _ _ _ b _ => b
@@ -52,7 +52,7 @@ Definition dhd {A B n} {v : vect A (S n)} (vε : vectε B v) : B (hd v) :=
 Definition dtl {A B n} {v : vect A (S n)} (vε : vectε B v) : vectε B (tl v) :=
   match vε in @vectε _ _ n v return
         match n as n return vect A n -> Type with
-        | 0%nat => fun _ => Unit
+        | 0%nat => fun _ => unit
         | S n => fun v => vectε B (tl v) end v with
   | εε => tt
   | consε _ _ _ _ bs => bs
@@ -112,7 +112,7 @@ Definition sub {A B s} (f : A -> tm s B) :=
 Lemma sub_assoc {s A B C} {f : A -> tm s B} {g : B -> tm s C} {t}:
   sub g (sub f t) = sub (sub g o f) t.
 Proof.
-  induction t; first reflexivity.
+  induction t using tm_rect; first reflexivity.
   cbn; apply: ap.
   induction X; first reflexivity.
   by rewrite /= IHX p.
@@ -261,7 +261,7 @@ Trocq Use Param_subst'_sub.
 (**  Trying to transfer substitution associativity *)
 
 Lemma subst'_assoc {f g : nat -> tm_monoid'} {t : tm_monoid'} :
-  subst' g (subst' f t) = subst' (subst' g o f) t.
+  subst' g (subst' f t) = subst' (fun x => subst' g (f x)) t.
 Proof.
   Fail trocq.
 (* unsupported combination:  *)
