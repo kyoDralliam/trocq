@@ -175,13 +175,13 @@ Proof.
   by rewrite /= ih1 ih2.
 Qed.
 
-Definition Param44_tm_monoid : Param44.Rel tm_monoid tm_monoid'.
+Definition Param44_tm_monoid : Param44.Rel tm_monoid' tm_monoid.
 Proof.
 apply Iso.toParam; unshelve econstructor.
-- exact: f.
 - exact: g.
-- exact: gf_id.
+- exact: f.
 - exact: fg_id.
+- exact: gf_id.
 Defined.
 
 Trocq Use Param44_nat Param44_tm_monoid.
@@ -189,12 +189,26 @@ Trocq Use Param44_nat Param44_tm_monoid.
 
 
 (**  Trying to transfer substitution *)
-
+Module TransferSub.
 Definition subst' : forall (σ : nat -> tm_monoid') (t : tm_monoid'), tm_monoid'.
 Proof.
-    Fail trocq.
+  trocq. exact sub.
+Defined.
+
+Print subst'.
+
+Eval cbn in subst' (fun _ => Unit) (Mul (Unit) (Var 0)).
+
+Goal  (fun x => subst' (fun _ => Unit) (Mul (x) (Var 0)))  = fun x => x.
+Proof.
+  rewrite /=. (* No simplification *)
+  rewrite /subst' /= -/subst'. (* No simplification ; too much to unfold *)
+  Restart.
+  cbn. (* Ugly *)
+  change ((fun x => Mul (subst' (fun _ => Unit) x) Unit) = idmap). (* ideal result *)
 Abort.
-(* Error: cannot find indt «tm_monoid'» at out class pc map1 map0 *)
+
+End TransferSub.
 
 Module ByHand.
 
@@ -214,6 +228,9 @@ Abort.
 
 End ByHand.
 
+(* The two approaches are convertible *)
+Check idpath : ByHand.subst' = TransferSub.subst'.
+
 (**  Defining substitution on the concrete representation and relating to the generic substitution *)
 
 Fixpoint subst' (σ : nat -> tm_monoid') (t : tm_monoid') : tm_monoid' :=
@@ -223,23 +240,23 @@ Fixpoint subst' (σ : nat -> tm_monoid') (t : tm_monoid') : tm_monoid' :=
    | Mul t1 t2 => Mul (subst' σ t1) (subst' σ t2)
    end.
 
-Lemma Param_sub_subst'
-  σ σ' (σR : R_arrow Param44_nat Param44_tm_monoid σ σ')
-  t t' (tR : Param44_tm_monoid t t'):
-  Param44_tm_monoid (sub σ t) (subst' σ' t').
+Lemma Param_subst'_sub
+  σ' σ (σR : R_arrow Param44_nat Param44_tm_monoid σ' σ)
+  t' t (tR : Param44_tm_monoid t' t):
+  Param44_tm_monoid (subst' σ' t') (sub σ t).
 Proof.
-  induction t' in t, tR |- * ; apply Param44.R_in_comap in tR;  rewrite /= in tR; rewrite -tR.
+  induction t' in t, tR |- * ; apply Param44.R_in_map in tR;  rewrite /= in tR; rewrite -tR.
   - apply: σR. by apply: map_in_R_nat.
   - reflexivity.
   - rewrite /=.
-    unshelve epose proof (ih1 := IHt'1 (g t'1) _); first by rewrite /= /graph fg_id.
-    apply Param44.R_in_comap in ih1; cbn in ih1.
-    unshelve epose proof (ih2 := IHt'2 (g t'2) _); first by rewrite /= /graph fg_id.
-    apply Param44.R_in_comap in ih2; cbn in ih2.
-    by rewrite  -ih1 -ih2 /graph /= 2!fg_id.
+    unshelve epose proof (ih1 := IHt'1 (g t'1) _); first by rewrite /= /graph.
+    apply Param44.R_in_map in ih1; cbn in ih1.
+    unshelve epose proof (ih2 := IHt'2 (g t'2) _); first by rewrite /= /graph.
+    apply Param44.R_in_map in ih2; cbn in ih2.
+    by rewrite  -ih1 -ih2 /graph /=.
 Qed.
 
-Trocq Use Param_sub_subst'.
+Trocq Use Param_subst'_sub.
 
 (**  Trying to transfer substitution associativity *)
 
@@ -247,4 +264,8 @@ Lemma subst'_assoc {f g : nat -> tm_monoid'} {t : tm_monoid'} :
   subst' g (subst' f t) = subst' (subst' g o f) t.
 Proof.
   Fail trocq.
-(* cannot find const «subst'» at out class pc map0 map0 *)
+(* unsupported combination:  *)
+(* app *)
+(*  [pglobal (const «subst'») «», c1,  *)
+(*   app [pglobal (const «subst'») «», c0, c2]] &  *)
+(* pglobal (indt «tm_monoid'») «» *)
