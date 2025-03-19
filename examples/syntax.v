@@ -240,10 +240,12 @@ Fixpoint subst' (σ : nat -> tm_monoid') (t : tm_monoid') : tm_monoid' :=
    | Mul t1 t2 => Mul (subst' σ t1) (subst' σ t2)
    end.
 
+Definition sub0 := @sub nat nat monoid.
+
 Lemma Param_subst'_sub
   σ' σ (σR : R_arrow Param44_nat Param44_tm_monoid σ' σ)
   t' t (tR : Param44_tm_monoid t' t):
-  Param44_tm_monoid (subst' σ' t') (sub σ t).
+  Param44_tm_monoid (subst' σ' t') (sub0 σ t).
 Proof.
   induction t' in t, tR |- * ; apply Param44.R_in_map in tR;  rewrite /= in tR; rewrite -tR.
   - apply: σR. by apply: map_in_R_nat.
@@ -257,15 +259,13 @@ Proof.
 Qed.
 
 Trocq Use Param_subst'_sub.
+Trocq Use Param10_paths Param01_paths.
 
 (**  Trying to transfer substitution associativity *)
+Set Printing Universes.
 
 Lemma subst'_assoc {f g : nat -> tm_monoid'} {t : tm_monoid'} :
   subst' g (subst' f t) = subst' (fun x => subst' g (f x)) t.
 Proof.
-  Fail trocq.
-(* unsupported combination:  *)
-(* app *)
-(*  [pglobal (const «subst'») «», c1,  *)
-(*   app [pglobal (const «subst'») «», c0, c2]] &  *)
-(* pglobal (indt «tm_monoid'») «» *)
+  revert f g t; trocq; intros; apply sub_assoc.
+Qed.
